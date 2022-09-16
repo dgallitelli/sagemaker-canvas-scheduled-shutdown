@@ -9,8 +9,9 @@ Run this CloudFormation template to automatically shutdown Amazon SageMaker Canv
 1. clone this repository
 2. `python3 -m virtualenv .venv`
 3. `source .venv/bin/activate`
-4. `cdk deploy`
-5. Enjoy!
+4. `pip install -r requirements.txt`
+5. `cdk deploy`
+6. Enjoy!
 
 ## Steps to cleanup: 
 
