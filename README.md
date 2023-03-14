@@ -1,6 +1,6 @@
 # Shutdown Amazon SageMaker Canvas on a Schedule
 
-## :warning: **If you are looking for the official AWS repository**: I suggest you read through the "[Provision and manage ML environments with Amazon SageMaker Canvas using AWS CDK and AWS Service Catalog | AWS Machine Learning Blog](https://aws.amazon.com/it/blogs/machine-learning/provision-and-manage-ml-environments-with-amazon-sagemaker-canvas-using-aws-cdk-and-aws-service-catalog/)" and refer to the official aws-samples repository on GitHub.
+## :warning: **If you are looking for the official AWS repository**: I suggest you read through the "[Provision and manage ML environments with Amazon SageMaker Canvas using AWS CDK and AWS Service Catalog | AWS Machine Learning Blog](https://aws.amazon.com/it/blogs/machine-learning/provision-and-manage-ml-environments-with-amazon-sagemaker-canvas-using-aws-cdk-and-aws-service-catalog/)" and refer to [the official aws-samples repository on GitHub](https://github.com/aws-samples/amazon-sagemaker-canvas-service-catalog).
 
 ![architecture](./images/scheduled-canvas-shutdown.png)
 
@@ -20,7 +20,7 @@ Run this CDK template to automatically shutdown Amazon SageMaker Canvas apps. Yo
 1. Download the [`template.yaml` file](https://raw.githubusercontent.com/dgallitelli/sagemaker-canvas-scheduled-shutdown/main/template.yaml)
 2. Go to the AWS CloudFormation page to launch a new stack - [click here](https://console.aws.amazon.com/cloudformation/)
 3. Create a new stack with new resources
-4. Providing the template downloaded, and complete the parameters required
+4. Providing the template downloaded, and complete the parameters required - name the stack `ScheduledCanvasShutdown`
 5. Enjoy!
 
 ## Steps to cleanup
