@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  ShutdownSchedule:
+    Type: String
+    Default: "cron(0 20 ? * FRI *)"
+    Description: The schedule expression for the shutdown event.
+  UserProfilesToSkip:
+    Type: String
+    Default: "user1,user2,user3"
+    Description: Comma-separated list of user profiles NOT to shut down on a schedule - leave empty for all.
+
+Resources:
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import json
+          import logging
+
+          # Add any user you want to skip here below
+          users_exceptions = '${UserProfilesToSkip}'.split(',')
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def clean_sagemaker_studio():
+              client = boto3.client("sagemaker")
+              domains = client.list_domains()['Domains']
+              for dom in domains:
+                  domain_id = dom["DomainId"]
+                  users = client.list_user_profiles(DomainIdEquals=domain_id)['UserProfiles']
+                  for u in users:
+                      user = u['UserProfileName']
+                      if user in users_exceptions:
+                          logger.info(f'Skipping user {user} from domain {domain_id}')
+                          continue
+                      apps = client.list_apps(DomainIdEquals=domain_id, UserProfileNameEquals=user)['Apps']
+                      for a in apps:
+                          app_type, app_name, app_status = a['AppType'], a['AppName'], a['Status']
+                          # Only clean Canvas apps - remove if you want to clean up everything
+                          if app_type != 'Canvas':
+                              logger.info(f'Ignoring app {app_name} of type {app_type}')
+                              continue
+                          if app_status != 'InService':
+                              logger.info(f'Cannot delete app {app_name} ({app_type}) of user {user} in domain {domain_id} because its status is {app_status.upper()}')
+                              continue
+                          # Delete the app
+                          logger.info(f'Deleting app {app_name} ({app_type}) of user {user} in domain {domain_id}')
+                          client.delete_app(
+                              DomainId=domain_id, UserProfileName=user,
+                              AppType=app_type, AppName=app_name
+                          )
+                  
+
+          def lambda_handler(event, context):
+              try:
+                  clean_sagemaker_studio()
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps('SageMaker Studio has been cleaned.')
+                  }
+              except Exception as e:
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps('There has been a problem with cleaning SageMaker Studio.'),
+                      'errorMessage': json.dumps(e)
+                  }
+
+
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.9
+      Timeout: 300
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+  CanvasShutdownSchedule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: 'Canvas shutdown schedule'
+      ScheduleExpression: !Ref ShutdownSchedule
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LambdaFunction.Arn
+          Id: 'CanvasShutdownLambdaTarget'
